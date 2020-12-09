@@ -2,9 +2,9 @@
 if($success) {  
     if($id == 0) { // new user to be inserted
         // prepares filename for moving image file from 'temp/' to'images/' 
-        if($image != "") $storedimage = movingfilename($image);
+        if($imageURL != "") $storedimageURL = movingfilename($imageURL);
         //also checks if image was not changed keeps the same file (here is empty)
-        else $storedimage = $image;
+        else $storedimageURL = $imageURL;
         $sql = "INSERT INTO users (id, first_name, last_name, "
                         ."role_id, email, password, image) "
                         ."VALUES (NULL,"
@@ -13,14 +13,14 @@ if($success) {
                         ." ".$role_id.","
                         ." \"".$email."\","
                         ." \"".$password."\","
-                        ." \"".$storedimage."\");";                
+                        ." \"".$storedimageURL."\");";                
         $Ok = mysqli_query($connect, $sql);
         mysqli_close($connect);
         if($Ok){ 
             $lastbasequery = "Registration successful. Use login form to enter.";
             //keeps status of last db operation
-            if($image != "") 
-                if(rename($image,$storedimage)) { // moves image fiile from 'temp/' to 'images/'
+            if($imageURL != "") 
+                if(rename($imageURL,$storedimageURL)) { // moves image fiile from 'temp/' to 'images/'
                     $lastbasequery .= " Image file saved.";
             }    
             else $lastbasequery .= " Image file not saved. ";
@@ -28,7 +28,7 @@ if($success) {
             header("location: ".$referer); //if Ok go to 'login' form
         }        
         else {
-            $lastbasequery = "Registration unsuccessful\n Try again.";
+            $lastbasequery .= "Registration unsuccessful\n Try again.";
             //keeps status of last db operation
             $_SESSION['lastbasequery'] = $lastbasequery;
             //if not Ok stays here 'in dataedit' form
@@ -36,15 +36,15 @@ if($success) {
     }
     else {
         // prepares filename for moving from'temp/' to'images/' 
-        if($image != $old_image) $storedimage = movingfilename($image);
+        if($imageURL != $old_imageURL) $storedimageURL = movingfilename($imageURL);
         //also checks if image was not changed keeps the same file
-        else $storedimage = $image;
+        else $storedimageURL = $imageURL;
         $sql = "UPDATE users SET "
             ."first_name=\"".$first_name."\", "
             ."last_name=\"".$last_name."\", " 
             ."role_id=".$role_id.", "
             ."email=\"".$email."\", "
-            ."image=\"".$storedimage."\", "
+            ."image=\"".$storedimageURL."\", "
             ."password=\"".$password."\" "
             ."WHERE id=".$id.";";
             //echo $sql;
@@ -52,9 +52,9 @@ if($success) {
         mysqli_close($connect);
         if($Ok){ 
             $lastbasequery = "Data update successful.";
-            if($image != $old_image){ 
-                if(rename($image,$storedimage)) {//moving image file from 'temp/' to 'images/'
-                    if($old_image != "") unlink($old_image); // clears disk space by removal old image
+            if($imageURL != $old_imageURL){ 
+                if(rename($imageURL,$storedimageURL)) {//moving image file from 'temp/' to 'images/'
+                    if($old_imageURL != "") unlink($old_imageURL); // clears disk space by removal old image
                     $lastbasequery .= " Image file updated.";
                 }    
                 else $lastbasequery .= " Image file not updated.";

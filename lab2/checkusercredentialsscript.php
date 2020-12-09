@@ -1,6 +1,8 @@
 <?php
    // Start the session
+    $dbconnectionscript = 'connectionscript.php';
     session_start();
+    $_SESSION['auth'] = false;
     if ($_SESSION['auth'] == true){ // if user authentificated unconditional return
         header("location:".$_SERVER['HTTP_REFERER']);
     }
@@ -13,7 +15,7 @@
         $email = $_POST['email'];
         $password = $_POST['password'];    
         $sql = "SELECT id, first_name, last_name, email, role_id, password FROM users WHERE email=\"".$email."\";";
-        require_once 'connection.php';
+        require_once $dbconnectionscript;
         $result = mysqli_query($connect, $sql);
         mysqli_close($connect);
         if(($result != null) && (($person = mysqli_fetch_array($result)) != null)){
@@ -32,7 +34,7 @@
             }
         }
         else{
-             $lastbasequery .= "This email not found. "; // repeat login process
+             $lastbasequery .= "This email is not found. "; // repeat login process
         }
     }
     else {

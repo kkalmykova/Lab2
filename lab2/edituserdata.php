@@ -1,79 +1,5 @@
 <?php
-// if 'id' was not set for first call this means registration process (new user)
-// otherwise this means data update process, Next iterations have 'id' because form calls itself
-// if 'referer' not set it means first iteration (form call) next iterations will set 'referer'
-    session_start();
-    $edituserdata_form = "edituserdata.php";
-    $upload_script = "upload.php";
-    $logo_image = "logo00.jpg";
-    $id = 0;                //'id' field of this form (page) for currently processed user
-    $first_name = "";       //'first_name' field of this form (page) for currently processed user
-    $last_name = "";        //'last_name' field of this form (page) for currently processed user
-    $role_id = 2;           //'role_id' field of this form (page) for currently processed user
-    $email = "";            //'email' field of this form (page) for currently processed user
-    $image = "";            //'image' field of this form (page) for currently processed user
-    $password = "";         //'password' field of this form (page) for currently processed user
-    $password_confirm = ""; //'password_confirmed' field of this form (page) for currently processed user
-    $old_image = "";          //'oldimage' field of this form (page) used in uploading operations
-    
-    $success = true;        //flag of success operation and data correctness
-    $error = "";            // keeps information on data entering error  
-    $lastbasequery = "";    // keeps information on db operationd status
-    $referer = "";          // keeps data on preferer (previous form)
-    $btn_title = "Register";// by default this is 'Register'(new user) process and 'confirm' title is set accordingly
-
-    $auth = false;          //if user authrntificated
-    $admin = false;         //if authentificated  user has admin role
-    $mypage = false;        //if user is in own page
-    $myfirst_name = "";     //keeps 'first_name' of authentificated  user
-    $mylast_name = "";      //keeps 'first_name' of authentificated  user
-    $myrole_id = 0;         //keeps 'role_id' of authentificated  user
-    $myid = 0;              //keeps 'id' of authentificated  user
-
-    $admin = false;
-    $myuserdata = false;
-    //firstly checks authentification vars and sets relevant environment
-    if(isset($_SESSION['auth'])&&(isset($_SESSION['myid']))) {
-        $auth = $_SESSION['auth'];
-        $myid = $_SESSION['myid'];
-        if(isset($_SESSION['admin'])) $admin = $_SESSION['admin']; 
-    }
-    else
-        $_SESSION['auth'] = false;
-    require_once 'connection.php';    
-    if(!isset($_POST['referer'])){ //if 'referer' not set this is first iteration
-        $referer = $_SERVER['HTTP_REFERER'];// set 'referer'
-        //if(isset($_SESSION['lastbasequery']))$lastbasequery = $_SESSION['lastbasequery'];
-        if(isset($_POST['id'])){ // if 'referer' not set but 'id' set, it means db reading required
-            $id = $_POST['id']; 
-            $btn_title = "Update"; //and this is update request 
-            $sql = "SELECT users.id, users.first_name, users.last_name, "
-            . "roles.title, users.role_id, users.email, users.password, users.image "
-            . "FROM users "
-            . "LEFT JOIN roles "
-            . "ON users.role_id = roles.id "
-            . "WHERE users.id = ".$id.";";
-            $result = mysqli_query($connect, $sql);
-            if ($result != null){ //reads db and sets internal vars
-                $person = mysqli_fetch_array($result);
-                $first_name = $person['first_name'];    
-                $last_name = $person['last_name'];
-                $role_id = $person['role_id'];
-                $email = $person['email'];
-                $image = $person['image'];
-                $old_image = $image;
-                //echo "image ".$image."  oldimage ".$old_image;
-                $password = $person['password'];
-            } 
-        }
-    }    
-    else { //verifies data after first/next iteration and makes db operations
-        require_once 'checkuserdata.php';
-    }
-    if($id == $myid) $mypage = true;        //checks if user is on own page
-    $sql = "SELECT id, title FROM roles";   //prepares roles list
-    $roles = mysqli_query($connect, $sql);
-    mysqli_close($connect);
+require_once 'edituserdatascript.php'
 ?>
 <!doctype html>
 <html lang="en">
@@ -86,6 +12,16 @@
     <style>
         .container {
             width: 70%;
+        }
+        * {
+            margin-top: 0;
+            margin-right: 0;
+            margin-bottom: 0;
+            margin-left: 0;
+            padding-top: 0;
+            padding-right: 0;
+            padding-left: 0;
+            padding-bottom: 0;
         }
     </style>
 </head>
@@ -101,46 +37,51 @@
             <img src="<?php echo $logo_image ?>" height="75" style="margin: 0; padding: 0">
         </section>
     <section class="col s6 right" style="margin: 0; padding:0">    
-        <?php echo ($error != "") ? $error : " "; ?><br>    <!--shows error status of previous data entering iteration-->
-        <?php echo ($lastbasequery != "") ? $lastbasequery : " "; ?><br> <!--shows status of last db operation-->
+        <p style="color:#dd2c00"> 
+            <span id="error"><?php echo ($error != "")? "<b>".$error."</b>" : " "; ?> </span>
+        <p>    
+            <!--shows error status of previous data entering iteration-->
+        <span id="status"><?php echo ($lastbasequery != "") ? $lastbasequery : " "; ?><br></span> <!--shows status of last db operation-->
     </section>       
     </div>    
     <div class="container row">
-        <div class="col s4 left" >
-        <iframe id="imageframe"  srcdoc="<img src='<?php echo $image?>' 
-                style='position: absolute; top: 0; left: 0; bottom: 0; right: 0; 
-                margin: auto; margin-bottom: 0; width: 100%;'>" 
-                name="imageframe" height="350" width="250" frameborder="no">    
-        </iframe> 
-        <!--<section class="col s4 offset-s4">-->
-        <section style="position: relative; left: 40%">
+        <div class="col s4 left" >           
         <?php 
-            if (($admin && $auth)|| $mypage) {
+            echo"<span id=\"imageplaceholder\">";
+            if($imageURL != "") 
+                echo "<img id=\"image\" src=\"".$imageURL."\" width=\"100%\">";
+            else 
+                echo "<img id=\"image\" src=\"".$no_imageURL."\" width=\"100%\">";
+            echo "</span>";
+            if (($admin && $auth) || $mypage) {      
                 echo"<form enctype=\"multipart/form-data\" action=\"".$upload_script."\" method=\"post\" "
-                . "name=\"loadphoto\" target=\"imageframe\">";
+                . "id = \"uploadimage\" name=\"uploadimage\" target=\"hiddenframe\" "
+                . "onchange=\"showloadprogress(); return false;\""
+                . " style=\"left: 50%; margin-right: 50%; transform: translate(50%, 50%)\">";
                 echo"<div class=\"file-field input-field\">";
                 echo"<div class=\"btn\">";
-                echo"<span>Browse</span>";
+                echo"<span>Upload image</span>";
                 echo"<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1024000\">";
-                echo"<input class=\"center\" id=\"fileToUpload\" name=\"fileToUpload\" onchange=\"submit();\" "
-                . "type=\"file\" accept=\".jpg,.pgn,.jpeg\">";
+                echo"<input id=\"fileToUpload\" name=\"fileToUpload\" "
+                . "onchange=\"submit();\" type=\"file\" accept=\".jpg,.pgn,.jpeg\">";
                 echo"</div>";
-               // echo"<div class=\"file-path-wrapper\">";
-               // echo"<input class=\"file-path validate\" width= \"100\" type=\"text\"";
-               // echo"placeholder = \"Upload image file\" />";
-               // echo"</div>";
+              //  echo"<div class=\"file-path-wrapper\">";
+              //  echo"<input class=\"file-path validate\" width= \"100\" type=\"text\"";
+              //  echo"placeholder = \"Upload image file\" />";
+              // echo"</div>";
                 echo"</div>";
                 echo"</form>";
-            }   
-        ?>
-       </section> 
+                echo "<iframe id=\"hiddenframe\" name=\"hiddenframe\" "
+                . "style=\"width:0px; height:0px; border:0px\"></iframe>";
+            }    
+        ?>            
     </div>
-    <section class="col s6 right" >
+    <div class="col s6 right">
     <form  action=<?php echo $edituserdata_form?> method="post">
         <div class="input-field">
             <input placeholder="First name"  
                 value="<?php echo $first_name?>" type="text" name="first_name" 
-                <?php if((!$admin || !$auth) && !$mypage) echo"disabled"?>>
+                 <?php if((!$admin || !$auth) && !$mypage) echo"disabled"?>>
             <!--if not admin AND not own user page read-only access allowed-->
             <label for="first_name" class="active">First name</label>
         </div>
@@ -171,6 +112,12 @@
                 ?> 
             </select>   
             <label for="role_id" class="active">Title</label>
+            <?php 
+                //if field disabled shall be POSTed as hidden
+                if((!$admin || !$auth) || $mypage){
+                    echo"<input value=\"".$role_id."\" type=\"hidden\" name=\"role_id\">";
+                }    
+            ?>
         </div>   
         <div class="input-field">
             <input placeholder="Email" 
@@ -198,19 +145,37 @@
                 echo"<div>"; 
                 //<!--hidden inputs to keep and POST service information-->
                 echo"<input value=\"".$id."\" type=\"hidden\" name=\"id\">";
-                echo"<input value=\"".$image."\" type=\"hidden\" name=\"image\">";
+                echo"<input value=\"".$imageURL."\" type=\"hidden\" id=\"imageURL\" name=\"imageURL\">";
                 echo"<input value=\"".$referer."\" type=\"hidden\" name=\"referer\">";
-                echo"<input value=\"".$old_image."\" type=\"hidden\" name=\"old_image\">";
+                echo"<input value=\"".$old_imageURL."\" type=\"hidden\" name=\"old_imageURL\">";
                 echo"</div>";
                 echo"<input type=\"submit\" name=\"submit\" value=\"".$btn_title."\" class=\"btn\">";
             }
-         ?>
-    <!--</form>    
-    <form  action="edituserdata.php" method="post">-->
+        ?>
         <a class="btn" href ="<?php echo $referer?>">Cancel</a>
-        <!--<input type="hidden" name=referer" value="<?php echo $referer?>">-->
-        <!--<input type="submit" name="cancel" value="Cancel" class="btn" >-->
     </form>    
+    </div>
     </div>     
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" type="text/javascript"></script>
+    <script type="text/javascript">   
+        function showloadprogress(){
+            console.log('show load progress');
+            $('#status').html("image file is being loaded...");
+        }
+        function handleResponse(uploaded_file, error) {    
+            console.log('handleresponse', uploaded_file, error);
+            //$('#uploadimage').show();
+            if(error != "") {
+                $('#error').html("<b>" + error + "</b>");
+                $('#status').html("");
+            }
+            else {
+                $('#imageURL').val(uploaded_file);
+                $('#status').html("Upload is Ok");
+                $('#error').html("");
+                $('#imageplaceholder').html("<img src=\"" + uploaded_file + "\" width=\"100%\">");
+            }   
+        }
+    </script>
 </body>
 </html>
